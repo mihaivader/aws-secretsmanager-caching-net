@@ -22,7 +22,7 @@ namespace Amazon.SecretsManager.Extensions.Caching
     /// <summary>
     /// A class used for clide-side caching of secrets stored in AWS Secrets Manager
     /// </summary>
-    public class SecretsManagerCache : IDisposable
+    public class SecretsManagerCache : ISecretsManagerCache, IDisposable
     {
         private readonly IAmazonSecretsManager secretsManager;
         private readonly SecretCacheConfiguration config;
@@ -69,7 +69,7 @@ namespace Amazon.SecretsManager.Extensions.Caching
                 sm.BeforeRequestEvent += this.ServiceClientBeforeRequestEvent;
             }
         }
-        
+
         private void ServiceClientBeforeRequestEvent(object sender, RequestEventArgs e)
         {
             if (e is WebServiceRequestEventArgs args && args.Headers.ContainsKey(VersionInfo.USER_AGENT_HEADER))
@@ -84,9 +84,7 @@ namespace Amazon.SecretsManager.Extensions.Caching
             cache.Dispose();
         }
 
-        /// <summary>
-        /// Asynchronously retrieves the specified SecretString after calling <see cref="GetCachedSecret"/>.
-        /// </summary>
+        /// <inheritdoc />
         public async Task<String> GetSecretString(String secretId)
         {
             SecretCacheItem secret = GetCachedSecret(secretId);
@@ -95,9 +93,7 @@ namespace Amazon.SecretsManager.Extensions.Caching
             return response?.SecretString;
         }
 
-        /// <summary>
-        /// Asynchronously retrieves the specified SecretBinary after calling <see cref="GetCachedSecret"/>.
-        /// </summary>
+        /// <inheritdoc />
         public async Task<byte[]> GetSecretBinary(String secretId)
         {
             SecretCacheItem secret = GetCachedSecret(secretId);
@@ -106,20 +102,13 @@ namespace Amazon.SecretsManager.Extensions.Caching
             return response?.SecretBinary?.ToArray();
         }
 
-        /// <summary>
-        /// Requests the secret value from SecretsManager asynchronously and updates the cache entry with any changes.
-        /// If there is no existing cache entry, a new one is created.
-        /// Returns true or false depending on if the refresh is successful.
-        /// </summary>
+        /// <inheritdoc />
         public async Task<bool> RefreshNowAsync(String secretId)
         {
             return await GetCachedSecret(secretId).RefreshNowAsync();
         }
 
-        /// <summary>
-        /// Returns the cache entry corresponding to the specified secret if it exists in the cache.
-        /// Otherwise, the secret value is fetched from Secrets Manager and a new cache entry is created.
-        /// </summary>
+        /// <inheritdoc />
         public SecretCacheItem GetCachedSecret(string secretId)
         {
             SecretCacheItem secret = cache.Get<SecretCacheItem>(secretId);
